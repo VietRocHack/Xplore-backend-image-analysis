@@ -1,5 +1,24 @@
+import base64
+import io
 import anthropic
+from PIL import Image, ImageDraw
+import string
 
+GRID_SIZE = 50
+PADDING_TOP = 100
+PADDING_LEFT = 100
+
+def add_padding_to_image(image, padding_top=PADDING_TOP, padding_left=PADDING_LEFT):
+    width, height = 1000, 1000
+    new_width = width + padding_left
+    new_height = height + padding_top
+    print("testing1")
+    # Create a new white image with padding
+    padded_image = Image.new('RGB', (new_width, new_height), color='white')
+    padded_image.paste(image, (padding_left, padding_top))
+    print("testing2")
+    
+    return padded_image, width // GRID_SIZE, height // GRID_SIZE
 
 class Claude:
     #client: Claude
@@ -12,6 +31,15 @@ class Claude:
         
 
     def image_to_text(self, image, media_type, model):
+        print("what's up")
+        # Add padding to the image and get dimensions
+        img_with_padding, cols, rows = add_padding_to_image(image)
+        print("hellow")
+        # Convert the image to base64
+        buffered = io.BytesIO()
+        img_with_padding.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        print("Waiting for shit")
         self.history.append({
             "role": "user",
             "content": [
@@ -20,12 +48,12 @@ class Claude:
                     "source": {
                         "type": "base64",
                         "media_type": media_type,
-                        "data": image,
+                        "data": img_base64,
                     },
                 },
                 {
                     "type": "text",
-                    "text": "Describe this image in detail. If there is a picture sent before this, point out the difference or progress that has made to get the new picture. If not, ignore this prompt and write about it in response"
+                    "text": f"Describe this image (make sure to be as descriptive as possible and compare it to the previous image) in details and analyze this image as if it had a chess-like grid overlay with {cols} columns (A-{string.ascii_uppercase[cols-1]}) and {rows} rows (1-{rows}). Each grid cell is {GRID_SIZE}x{GRID_SIZE} pixels. Identify all interesting or notable elements in the image. For each element, provide its location using the grid coordinates (e.g., ['B2', 'B3'] for an element spanning two cells) and a brief description. Format your response as a JSON object with an 'elements' array, where each element has 'grid_locations' (an array of grid coordinates) and 'description' fields (also be as descriptive as possible). Also a 'overall' field that describes the entire image. Limit your response to the 10 most interesting or notable elements."
                 }
             ]
         })
@@ -41,5 +69,4 @@ class Claude:
             "content": response.content[0].text
         })
         
-        print(response.content[0].text)
         return response
