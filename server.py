@@ -29,10 +29,12 @@ def home():
 @app.route('/help', methods=['POST'])
 def help():
     #PROCESS USER PROMPT
+    print(f"Received new request with body {request.data}")
     data = request.json
     text = data.get('text','')
     user_prompt = str(text)
     
+    print("Taking a screenshot from current feed")
     #GET PICTURE
     api_url = f'http://127.0.0.1:5000/screenshot'
     response = requests.get(api_url)
@@ -40,6 +42,7 @@ def help():
     if response.status_code != 200:
         return jsonify({"error": "Failed to fetch image from API"}), 400
     
+    print("Processing image got from screenshot")
     # Get the image content and MIME type
     image_content = response.content
     mime_type = response.headers.get('Content-Type', 'image/png')
@@ -52,15 +55,13 @@ def help():
     # Save the image temporarily
     with open(filepath, 'wb') as f:
         f.write(image_content)
-    
-    image = Image.open(filepath)
 
     try:
         # Encode the image to base64
         # image_data = base64.b64encode(image_content).decode('utf-8')
-        
+        print("Attempting analysis with Anthropic")
         # Process the image with Claude
-        response = client.image_to_text(image, mime_type, "claude-3-5-sonnet-20241022")
+        response = client.image_to_text(filepath, mime_type, "claude-3-5-sonnet-20241022")
         #IMAGE DETAILS
         description_text = response.content[0].text
         print(description_text)

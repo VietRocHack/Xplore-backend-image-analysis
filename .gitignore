@@ -5,3 +5,5 @@ claude-env/
 *env
 
 __pycache__
+
+static/image_*
