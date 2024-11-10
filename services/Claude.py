@@ -62,7 +62,7 @@ class Claude:
         # Add padding to the image and get dimensions
 
         img_with_padding, cols, rows = add_padded_chess_grid(image)
-        img_with_padding.show()
+
         # Convert the image to base64
         buffered = io.BytesIO()
         img_with_padding.save(buffered, format="PNG")
