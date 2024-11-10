@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from services.Claude import Claude
@@ -11,7 +11,7 @@ from datetime import datetime
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["http://localhost:5173"])
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
 
@@ -26,8 +26,15 @@ def home():
     return "WELCOME WHATSUP SIUUUUUU"
 
 
-@app.route('/process-img', methods=['POST'])
-def process_image():
+@app.route('/help', methods=['POST'])
+def help():
+    #PROCESS USER PROMPT
+    data = request.json
+    text = data.get('text','')
+    user_prompt = str(text)
+    print(user_prompt)
+    
+    #GET PICTURE
     api_url = f'http://127.0.0.1:5000/get_image'
     response = requests.get(api_url)
 
@@ -53,14 +60,24 @@ def process_image():
         
         # Process the image with Claude
         response = client.image_to_text(image_data, mime_type, "claude-3-5-sonnet-20241022")
+        
+        #IMAGE DETAILS
         description_text = response.content[0].text
         
-        return jsonify({"description": description_text}), 200
+        handle_input_api = 'http://127.0.0.1:5000/handle-input'
+        payload = {
+            'user_prompt': user_prompt,
+            'image': image_data,
+            'description': description_text
+        }
+        handle_input_response = requests.post(handle_input_api, json=payload)
+        
+        if handle_input_response.status_code == 200:
+            return handle_input_response.json(), HTTP_OK
+        else:
+            return jsonify({"error": "Failed to process input"}), handle_input_response.status_code
     except Exception as e:
-        # Clean up the temporary file in case of an error
-        # if os.path.exists(filepath):
-        #     os.remove(filepath)
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), HTTP_BAD_REQUEST
 
 if __name__ == '__main__':
     app.run(port=8000,debug=True)
