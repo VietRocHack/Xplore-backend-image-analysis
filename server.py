@@ -61,7 +61,10 @@ def help():
     try:
         # Encode the image to base64
         # image_data = base64.b64encode(image_content).decode('utf-8')
-        image = Image.open(filepath)
+        
+        with Image.open(filepath) as img:
+            image = img.resize((500, 500))
+        # image = Image.open(filepath)
         print("Attempting analysis with Anthropic")
         # Process the image with Claude
         response = client.image_to_text(image, mime_type, "claude-3-5-sonnet-20241022")

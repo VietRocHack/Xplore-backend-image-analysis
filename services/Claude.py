@@ -1,22 +1,50 @@
 import base64
 import io
 import anthropic
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import string
 
 GRID_SIZE = 50
 PADDING_TOP = 100
 PADDING_LEFT = 100
 
-def add_padding_to_image(image, padding_top=PADDING_TOP, padding_left=PADDING_LEFT):
-    width, height = 1000, 1000
+def add_padded_chess_grid(image, padding_top=PADDING_TOP, padding_left=PADDING_LEFT):
+    width, height = image.size
     new_width = width + padding_left
     new_height = height + padding_top
+    
     # Create a new white image with padding
     padded_image = Image.new('RGB', (new_width, new_height), color='white')
     padded_image.paste(image, (padding_left, padding_top))
     
-    return padded_image, width // GRID_SIZE, height // GRID_SIZE
+    draw = ImageDraw.Draw(padded_image)
+    
+    # Try to load a larger font, fall back to default if not available
+    try:
+        font = ImageFont.truetype("arial.ttf", 30)
+    except IOError:
+        font = ImageFont.load_default()
+
+    cols = width // GRID_SIZE
+    rows = height // GRID_SIZE
+
+    # Draw vertical lines and label them
+    for i in range(cols + 1):
+        x = i * GRID_SIZE + padding_left
+        draw.line([(x, padding_top), (x, new_height)], fill='red', width=2)
+        if i < cols:
+            label = string.ascii_uppercase[i]
+            draw.text((x + GRID_SIZE//2, padding_top//2), label, fill='red', font=font, anchor="mm")
+
+    # Draw horizontal lines and label them
+    for i in range(rows + 1):
+        y = i * GRID_SIZE + padding_top
+        draw.line([(padding_left, y), (new_width, y)], fill='red', width=2)
+        if i < rows:
+            label = str(i + 1)
+            draw.text((padding_left//2, y + GRID_SIZE//2), label, fill='red', font=font, anchor="mm")
+
+    return padded_image, cols, rows
 
 class Claude:
     #client: Claude
@@ -33,8 +61,8 @@ class Claude:
 
         # Add padding to the image and get dimensions
 
-        img_with_padding, cols, rows = add_padding_to_image(image)
-
+        img_with_padding, cols, rows = add_padded_chess_grid(image)
+        img_with_padding.show()
         # Convert the image to base64
         buffered = io.BytesIO()
         img_with_padding.save(buffered, format="PNG")
@@ -57,7 +85,8 @@ class Claude:
                 }
             ]
         })
-
+        
+        print(self.history)
         response = self.client.messages.create(
             model = model, #claude-3-5-sonnet-20241022
             max_tokens=2048,
