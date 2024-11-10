@@ -1,6 +1,8 @@
+import base64
+import json
 import os
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, make_response, request, jsonify, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 from services.Claude import Claude
@@ -59,13 +61,23 @@ def help():
     try:
         # Encode the image to base64
         # image_data = base64.b64encode(image_content).decode('utf-8')
+        image = Image.open(filepath)
         print("Attempting analysis with Anthropic")
         # Process the image with Claude
-        response = client.image_to_text(filepath, mime_type, "claude-3-5-sonnet-20241022")
+        response = client.image_to_text(image, mime_type, "claude-3-5-sonnet-20241022")
         #IMAGE DETAILS
         description_text = response.content[0].text
-        print(description_text)
-        return jsonify(description_text), 200
+        # print(description_text)
+
+        with open(filepath, "rb") as image_file:
+            image_data = base64.b64encode(image_file.read()).decode("utf-8")
+        # Create a JSON response containing both text and the base64-encoded image
+        payload = {
+            "analysis": json.loads(str(description_text)),
+            "image": f"data:image/png;base64,{image_data}"
+        }
+        print(response)
+        return jsonify(payload), 200
     except Exception as e:
         return jsonify({"error": str(e)}), HTTP_BAD_REQUEST
 
