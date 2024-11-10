@@ -25,7 +25,7 @@ class Claude:
                 },
                 {
                     "type": "text",
-                    "text": "Describe this image. If there is a picture sent before this, point out the difference or progress that has made to get the new picture. If not, ignore this prompt"
+                    "text": "Describe this image in detail. If there is a picture sent before this, point out the difference or progress that has made to get the new picture. If not, ignore this prompt and write about it in response"
                 }
             ]
         })
