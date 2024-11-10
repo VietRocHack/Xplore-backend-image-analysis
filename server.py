@@ -67,7 +67,7 @@ def help():
         # image = Image.open(filepath)
         print("Attempting analysis with Anthropic")
         # Process the image with Claude
-        response = client.image_to_text(image, mime_type, "claude-3-5-sonnet-20241022")
+        response = client.image_to_text(image, mime_type, "claude-3-5-sonnet-20241022", user_prompt)
         #IMAGE DETAILS
         description_text = response.content[0].text
         # print(description_text)
@@ -79,10 +79,10 @@ def help():
             "analysis": json.loads(str(description_text)),
             "image": f"data:image/png;base64,{image_data}"
         }
-        print(response)
+
         return jsonify(payload), 200
     except Exception as e:
         return jsonify({"error": str(e)}), HTTP_BAD_REQUEST
 
 if __name__ == '__main__':
-    app.run(port=8000,debug=True)
+    app.run(host="0.0.0.0",port=8000,debug=True)
